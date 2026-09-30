@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: 타입 및 Android/iOS 번들 검사
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: 저장소 가져오기
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: TypeScript 검사
+        run: npm run typecheck
+
+      - name: Expo 의존성 검사
+        run: npm run check:dependencies
+
+      - name: Android 번들 생성
+        run: npm run export:android
+
+      - name: iOS 번들 생성
+        run: npm run export:ios
